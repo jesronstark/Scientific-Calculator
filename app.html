@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Calculator</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-color: #ecf0f1;
+            --button-hover: #2980b9;
+            --operator-color: #e67e22;
+            --function-color: #9b59b6;
+            --equals-color: #27ae60;
+            --clear-color: #e74c3c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: var(--text-color);
+        }
+
+        .calculator {
+            width: 340px;
+            background-color: var(--primary-color);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            animation: popIn 0.5s forwards;
+            overflow: hidden;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            80% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .display {
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: right;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .display::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .previous-operand {
+            min-height: 24px;
+            font-size: 18px;
+            color: rgba(236, 240, 241, 0.7);
+            word-wrap: break-word;
+        }
+
+        .current-operand {
+            min-height: 40px;
+            font-size: 32px;
+            font-weight: bold;
+            word-wrap: break-word;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 10px;
+        }
+
+        button {
+            border: none;
+            outline: none;
+            padding: 15px 0;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%, -50%);
+            transform-origin: 50% 50%;
+        }
+
+        button:active::after {
+            animation: ripple 0.6s ease-out;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(20, 20);
+                opacity: 0;
+            }
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .number {
+            background-color: var(--secondary-color);
+        }
+
+        .number:hover {
+            background-color: var(--accent-color);
+        }
+
+        .operator {
+            background-color: var(--operator-color);
+        }
+
+        .operator:hover {
+            background-color: #d35400;
+        }
+
+        .function {
+            background-color: var(--function-color);
+        }
+
+        .function:hover {
+            background-color: #8e44ad;
+        }
+
+        .equals {
+            background-color: var(--equals-color);
+            grid-column: span 2;
+        }
+
+        .equals:hover {
+            background-color: #219955;
+        }
+
+        .clear {
+            background-color: var(--clear-color);
+        }
+
+        .clear:hover {
+            background-color: #c0392b;
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .span-3 {
+            grid-column: span 3;
+        }
+
+        .history-btn {
+            background-color: #7f8c8d;
+        }
+
+        .history-btn:hover {
+            background-color: #95a5a6;
+        }
+
+        .history-panel {
+            position: absolute;
+            right: -300px;
+            top: 0;
+            width: 280px;
+            height: 100%;
+            background-color: var(--secondary-color);
+            padding: 20px;
+            transition: right 0.3s ease;
+            border-top-right-radius: 20px;
+            border-bottom-right-radius: 20px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .history-panel.show {
+            right: 0;
+        }
+
+        .history-item {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(236, 240, 241, 0.2);
+            cursor: pointer;
+        }
+
+        .history-item:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .close-history {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .calculator-container {
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--secondary-color);
+            border: none;
+            color: var(--text-color);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <button class="theme-toggle" id="themeToggle">☀️</button>
+        <div class="calculator">
+            <div class="display">
+                <div class="previous-operand" id="previousOperand"></div>
+                <div class="current-operand" id="currentOperand">0</div>
+            </div>
+            <div class="buttons-grid">
+                <button class="clear" id="clear">AC</button>
+                <button class="function" id="delete">DEL</button>
+                <button class="function" id="history">HIST</button>
+                <button class="operator" id="divide">÷</button>
+                <button class="operator" id="multiply">×</button>
+
+                <button class="function" id="sin">sin</button>
+                <button class="function" id="cos">cos</button>
+                <button class="function" id="tan">tan</button>
+                <button class="operator" id="subtract">-</button>
+                <button class="operator" id="add">+</button>
+
+                <button class="function" id="log">log</button>
+                <button class="function" id="ln">ln</button>
+                <button class="function" id="sqrt">√</button>
+                <button class="number" id="seven">7</button>
+                <button class="number" id="eight">8</button>
+
+                <button class="function" id="pow">x^y</button>
+                <button class="function" id="fact">x!</button>
+                <button class="function" id="pi">π</button>
+                <button class="number" id="nine">9</button>
+                <button class="number" id="four">4</button>
+
+                <button class="function" id="exp">e^x</button>
+                <button class="function" id="tenPow">10^x</button>
+                <button class="function" id="mod">mod</button>
+                <button class="number" id="five">5</button>
+                <button class="number" id="six">6</button>
+
+                <button class="function" id="openParen">(</button>
+                <button class="function" id="closeParen">)</button>
+                <button class="number" id="decimal">.</button>
+                <button class="number" id="one">1</button>
+                <button class="number" id="two">2</button>
+
+                <button class="function" id="degRad">DEG</button>
+                <button class="number" id="zero">0</button>
+                <button class="number" id="plusMinus">±</button>
+                <button class="number" id="three">3</button>
+                <button class="equals" id="equals">=</button>
+            </div>
+        </div>
+        <div class="history-panel" id="historyPanel">
+            <button class="close-history" id="closeHistory">×</button>
+            <h3>Calculation History</h3>
+            <div id="historyItems"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Calculator state
+            let currentOperand = '0';
+            let previousOperand = '';
+            let operation = undefined;
+            let resetScreen = false;
+            let isDegreeMode = true;
+            let calculationHistory = [];
+
+            // DOM elements
+            const currentOperandElement = document.getElementById('currentOperand');
+            const previousOperandElement = document.getElementById('previousOperand');
+            const historyPanel = document.getElementById('historyPanel');
+            const historyItems = document.getElementById('historyItems');
+            const themeToggle = document.getElementById('themeToggle');
+
+            // Button elements
+            const numberButtons = document.querySelectorAll('.number:not(#plusMinus)');
+            const operatorButtons = document.querySelectorAll('.operator');
+            const equalsButton = document.getElementById('equals');
+            const clearButton = document.getElementById('clear');
+            const deleteButton = document.getElementById('delete');
+            const decimalButton = document.getElementById('decimal');
+            const plusMinusButton = document.getElementById('plusMinus');
+            const historyButton = document.getElementById('history');
+            const closeHistoryButton = document.getElementById('closeHistory');
+            const degRadButton = document.getElementById('degRad');
+
+            // Function buttons
+            const sinButton = document.getElementById('sin');
+            const cosButton = document.getElementById('cos');
+            const tanButton = document.getElementById('tan');
+            const logButton = document.getElementById('log');
+            const lnButton = document.getElementById('ln');
+            const sqrtButton = document.getElementById('sqrt');
+            const powButton = document.getElementById('pow');
+            const factButton = document.getElementById('fact');
+            const piButton = document.getElementById('pi');
+            const expButton = document.getElementById('exp');
+            const tenPowButton = document.getElementById('tenPow');
+            const modButton = document.getElementById('mod');
+            const openParenButton = document.getElementById('openParen');
+            const closeParenButton = document.getElementById('closeParen');
+
+            // Update display
+            function updateDisplay() {
+                currentOperandElement.innerText = currentOperand;
+                previousOperandElement.innerText = previousOperand;
+            }
+
+            // Append number
+            function appendNumber(number) {
+                if (currentOperand === '0' || resetScreen) {
+                    currentOperand = number;
+                    resetScreen = false;
+                } else {
+                    currentOperand += number;
+                }
+            }
+
+            // Choose operation
+            function chooseOperation(op) {
+                if (currentOperand === '') return;
+                if (previousOperand !== '') {
+                    compute();
+                }
+                operation = op;
+                previousOperand = `${currentOperand} ${operation}`;
+                currentOperand = '';
+            }
+
+            // Compute calculation
+            function compute() {
+                let computation;
+                const prev = parseFloat(previousOperand);
+                const current = parseFloat(currentOperand);
+                
+                if (isNaN(prev) return;
+                
+                switch (operation) {
+                    case '+':
+                        computation = prev + current;
+                        break;
+                    case '-':
+                        computation = prev - current;
+                        break;
+                    case '×':
+                        computation = prev * current;
+                        break;
+                    case '÷':
+                        computation = prev / current;
+                        break;
+                    default:
+                        return;
+                }
+                
+                addToHistory(`${previousOperand} ${currentOperand} = ${computation}`);
+                currentOperand = computation.toString();
+                operation = undefined;
+                previousOperand = '';
+                resetScreen = true;
+            }
+
+            // Delete last digit
+            function deleteNumber() {
+                if (currentOperand.length === 1) {
+                    currentOperand = '0';
+                } else {
+                    currentOperand = currentOperand.slice(0, -1);
+                }
+            }
+
+            // Clear all
+            function clearAll() {
+                currentOperand = '0';
+                previousOperand = '';
+                operation = undefined;
+            }
+
+            // Add decimal point
+            function appendDecimal() {
+                if (resetScreen) {
+                    currentOperand = '0.';
+                    resetScreen = false;
+                    return;
+                }
+                if (currentOperand.includes('.')) return;
+                currentOperand += '.';
+            }
+
+            // Toggle plus/minus
+            function togglePlusMinus() {
+                if (currentOperand === '0') return;
+                if (currentOperand.startsWith('-')) {
+                    currentOperand = currentOperand.substring(1);
+                } else {
+                    currentOperand = '-' + currentOperand;
+                }
+            }
+
+            // Calculate factorial
+            function factorial(n) {
+                if (n < 0) return NaN;
+                if (n === 0 || n === 1) return 1;
+                let result = 1;
+                for (let i = 2; i <= n; i++) {
+                    result *= i;
+                }
+                return result;
+            }
+
+            // Add calculation to history
+            function addToHistory(calculation) {
+                calculationHistory.unshift(calculation);
+                if (calculationHistory.length > 10) {
+                    calculationHistory.pop();
+                }
+                updateHistoryDisplay();
+            }
+
+            // Update history display
+            function updateHistoryDisplay() {
+                historyItems.innerHTML = '';
+                calculationHistory.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.textContent = item;
+                    historyItem.addEventListener('click', () => {
+                        // When a history item is clicked, you could implement logic to use that value
+                        // For now, we'll just log it
+                        console.log('Selected from history:', item);
+                    });
+                    historyItems.appendChild(historyItem);
+                });
+            }
+
+            // Toggle degree/radian mode
+            function toggleDegRad() {
+                isDegreeMode = !isDegreeMode;
+                degRadButton.textContent = isDegreeMode ? 'DEG' : 'RAD';
+            }
+
+            // Convert to radians if in degree mode
+            function toRadians(degrees) {
+                return isDegreeMode ? degrees * Math.PI / 180 : degrees;
+            }
+
+            // Toggle history panel
+            function toggleHistory() {
+                historyPanel.classList.toggle('show');
+            }
+
+            // Toggle theme
+            function toggleTheme() {
+                document.body.classList.toggle('light-theme');
+                themeToggle.textContent = document.body.classList.contains('light-theme') ? '🌙' : '☀️';
+            }
+
+            // Apply scientific function
+            function applyFunction(func) {
+                const num = parseFloat(currentOperand);
+                if (isNaN(num)) return;
+
+                let result;
+                switch (func) {
+                    case 'sin':
+                        result = Math.sin(toRadians(num));
+                        break;
+                    case 'cos':
+                        result = Math.cos(toRadians(num));
+                        break;
+                    case 'tan':
+                        result = Math.tan(toRadians(num));
+                        break;
+                    case 'log':
+                        result = Math.log10(num);
+                        break;
+                    case 'ln':
+                        result = Math.log(num);
+                        break;
+                    case 'sqrt':
+                        result = Math.sqrt(num);
+                        break;
+                    case 'pow':
+                        previousOperand = `${currentOperand}^`;
+                        currentOperand = '';
+                        operation = 'pow';
+                        return;
+                    case 'fact':
+                        result = factorial(num);
+                        break;
+                    case 'pi':
+                        result = Math.PI;
+                        break;
+                    case 'exp':
+                        result = Math.exp(num);
+                        break;
+                    case 'tenPow':
+                        result = Math.pow(10, num);
+                        break;
+                    case 'mod':
+                        previousOperand = `${currentOperand} mod`;
+                        currentOperand = '';
+                        operation = 'mod';
+                        return;
+                    default:
+                        return;
+                }
+
+                addToHistory(`${func}(${num}) = ${result}`);
+                currentOperand = result.toString();
+                resetScreen = true;
+            }
+
+            // Event listeners for number buttons
+            numberButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    appendNumber(button.textContent);
+                    updateDisplay();
+                });
+            });
+
+            // Event listeners for operator buttons
+            operatorButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    chooseOperation(button.textContent);
+                    updateDisplay();
+                });
+            });
+
+            // Event listener for equals button
+            equalsButton.addEventListener('click', () => {
+                compute();
+                updateDisplay();
+            });
+
+            // Event listener for clear button
+            clearButton.addEventListener('click', () => {
+                clearAll();
+                updateDisplay();
+            });
+
+            // Event listener for delete button
+            deleteButton.addEventListener('click', () => {
+                deleteNumber();
+                updateDisplay();
+            });
+
+            // Event listener for decimal button
+            decimalButton.addEventListener('click', () => {
+                appendDecimal();
+                updateDisplay();
+            });
+
+            // Event listener for plus/minus button
+            plusMinusButton.addEventListener('click', () => {
+                togglePlusMinus();
+                updateDisplay();
+            });
+
+            // Event listener for history button
+            historyButton.addEventListener('click', toggleHistory);
+            closeHistoryButton.addEventListener('click', toggleHistory);
+
+            // Event listener for degree/radian toggle
+            degRadButton.addEventListener('click', () => {
+                toggleDegRad();
+            });
+
+            // Event listeners for function buttons
+            sinButton.addEventListener('click', () => applyFunction('sin'));
+            cosButton.addEventListener('click', () => applyFunction('cos'));
+            tanButton.addEventListener('click', () => applyFunction('tan'));
+            logButton.addEventListener('click', () => applyFunction('log'));
+            lnButton.addEventListener('click', () => applyFunction('ln'));
+            sqrtButton.addEventListener('click', () => applyFunction('sqrt'));
+            powButton.addEventListener('click', () => applyFunction('pow'));
+            factButton.addEventListener('click', () => applyFunction('fact'));
+            piButton.addEventListener('click', () => applyFunction('pi'));
+            expButton.addEventListener('click', () => applyFunction('exp'));
+            tenPowButton.addEventListener('click', () => applyFunction('tenPow'));
+            modButton.addEventListener('click', () => applyFunction('mod'));
+            openParenButton.addEventListener('click', () => appendNumber('('));
+            closeParenButton.addEventListener('click', () => appendNumber(')'));
+
+            // Event listener for theme toggle
+            themeToggle.addEventListener('click', toggleTheme);
+
+            // Keyboard support
+            document.addEventListener('keydown', (e) => {
+                if (e.key >= '0' && e.key <= '9') {
+                    appendNumber(e.key);
+                    updateDisplay();
+                } else if (e.key === '.') {
+                    appendDecimal();
+                    updateDisplay();
+                } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+                    const op = e.key === '*' ? '×' : e.key === '/' ? '÷' : e.key;
+                    chooseOperation(op);
+                    updateDisplay();
+                } else if (e.key === 'Enter' || e.key === '=') {
+                    compute();
+                    updateDisplay();
+                } else if (e.key === 'Backspace') {
+                    deleteNumber();
+                    updateDisplay();
+                } else if (e.key === 'Escape') {
+                    clearAll();
+                    updateDisplay();
+                } else if (e.key === 'h' || e.key === 'H') {
+                    toggleHistory();
+                }
+            });
+
+            // Initialize display
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>
