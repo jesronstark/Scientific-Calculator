@@ -3,6 +3,10 @@
 
 
 
+
+
+
+
 Overview
 
 This is a feature-rich scientific calculator built with HTML, CSS, and JavaScript, all contained in a single file. The calculator includes standard arithmetic operations along with advanced scientific functions, a calculation history panel, and attractive animations.
